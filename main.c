@@ -15,6 +15,11 @@ struct PacketStats {
     int totalPackets;
     int totalPayloadSize;
 };
+
+
+void icmp_packet_callback(pcap_t *handle);
+void udp_packet_callback(pcap_t *handle);
+
 void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     struct PacketStats *stats = (struct PacketStats *)user_data;
 
@@ -34,24 +39,11 @@ void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u
 
 
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
-void icmp_packet_callback(pcap_t *handle);
-void udp_packet_callback(pcap_t *handle);
 
-void print_packet_type(int protocol) {
-    switch (protocol) {
-        case IPPROTO_ICMP:
-            printf("Packet Type: ICMP\n");
-            break;
-        case IPPROTO_TCP:
-            printf("Packet Type: TCP\n");
-            break;
-        case IPPROTO_UDP:
-            printf("Packet Type: UDP\n");
-            break;
-        default:
-            printf("Packet Type: Unknown (%d)\n", protocol);
-    }
-}
+
+
+void print_packet_type(int protocol);
+   
 
 void process_packet(const u_char *packet) {
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
@@ -66,40 +58,7 @@ void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const 
     process_packet(packet);
 }
 
-void icmp_packet_callback(pcap_t *handle) {
-    // Set ICMP capture filter
-    struct bpf_program fp;
-    char filter_exp[] = "icmp";
-    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
-        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
-        return;
-    }
-    if (pcap_setfilter(handle, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
-        return;
-    }
 
-    // Start capturing ICMP packets
-    printf("Press 's' to stop sniffing ICMP packets...\n");
-    pcap_loop(handle, 0, packet_callback, NULL);
-}
-
-void udp_packet_callback(pcap_t *handle) {
-     struct bpf_program fp;
-    char filter_exp[] = "udp";
-    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
-        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
-        return;
-    }
-    if (pcap_setfilter(handle, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
-        return;
-    }
-
-    // Start capturing ICMP packets
-    printf("Press 's' to stop sniffing UDP packets...\n");
-    pcap_loop(handle, 0, packet_callback, NULL);
-}
 
 
 int main(int argc, char *argv[]) {
@@ -189,3 +148,63 @@ int main(int argc, char *argv[]) {
 
     return 0;
 }
+
+
+void print_packet_type(int protocol) {
+    switch (protocol) {
+        case IPPROTO_ICMP:
+            printf("Packet Type: ICMP\n");
+            break;
+        case IPPROTO_TCP:
+            printf("Packet Type: TCP\n");
+            break;
+        case IPPROTO_UDP:
+            printf("Packet Type: UDP\n");
+            break;
+        default:
+            printf("Packet Type: Unknown (%d)\n", protocol);
+    }
+}
+
+
+
+// ______________________________
+
+void icmp_packet_callback(pcap_t *handle) {
+    // Set ICMP capture filter
+    struct bpf_program fp;
+    char filter_exp[] = "icmp";
+    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return;
+    }
+    if (pcap_setfilter(handle, &fp) == -1) {
+        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return;
+    }
+
+    // Start capturing ICMP packets
+    printf("Press 's' to stop sniffing ICMP packets...\n");
+    pcap_loop(handle, 0, packet_callback, NULL);
+}
+
+void udp_packet_callback(pcap_t *handle) {
+     struct bpf_program fp;
+    char filter_exp[] = "udp";
+    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return;
+    }
+    if (pcap_setfilter(handle, &fp) == -1) {
+        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return;
+    }
+
+    // Start capturing ICMP packets
+    printf("Press 's' to stop sniffing UDP packets...\n");
+    pcap_loop(handle, 0, packet_callback, NULL);
+}
+
+
+
+// ______________________________
