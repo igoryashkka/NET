@@ -8,8 +8,11 @@
 #include <time.h>
 /// @brief 
 volatile sig_atomic_t stop = 0; // A flag to indicate if capturing should stop
-
+///
 #define ETHERNET_HEADER_SIZE 14
+
+
+void process_packet(const u_char *packet);
 
 struct PacketStats {
     int totalPackets;
@@ -19,10 +22,7 @@ struct PacketStats {
 
 void icmp_packet_callback(pcap_t *handle); // -i
 void udp_packet_callback(pcap_t *handle); // -u
-
-
-// -m
-void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+void run_mode_packet_callback(pcap_t *handle);// -r 
 
 
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
@@ -30,16 +30,13 @@ void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const 
 }
 
 
-void print_packet_type(int protocol);
    
 
 void process_packet(const u_char *packet) {
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
 
-    printf("Source IP: %s | Destination IP: %s | Protocol: %d\n",
+    printf("Source IP: %s | Destination IP: %s | Protocol: %d  \n",
            inet_ntoa(ip_header->ip_src), inet_ntoa(ip_header->ip_dst), ip_header->ip_p);
-
-    print_packet_type(ip_header->ip_p);
 }
 
 
@@ -62,7 +59,6 @@ int main(int argc, char *argv[]) {
     int icmp_mode = 0;
     int run_mode = 0;
     int udp_mode = 0;
-    int simple_mode = 0;
 
     // Parse command-line arguments
     while ((option = getopt(argc, argv, "irum")) != -1) {
@@ -76,16 +72,13 @@ int main(int argc, char *argv[]) {
             case 'u' : 
                 udp_mode = 1;
                 break;
-            case 'm' : 
-                simple_mode = 1;
-                break;
             default:
                 fprintf(stderr, "Usage: %s -i -r\n", argv[0]);
                 return 1;
         }
     }
 
-    // Get the default network device
+ 
     dev = pcap_lookupdev(errbuf);
     if (dev == NULL) {
         printf("Error finding default device: %s\n", errbuf);
@@ -104,31 +97,11 @@ int main(int argc, char *argv[]) {
         icmp_packet_callback(handle);
     } else if (run_mode) {
         printf("Running custom code...\n");
-        pcap_loop(handle, 0, packet_callback, NULL);
+        run_mode_packet_callback(handle);
     } else if (udp_mode){
         udp_packet_callback(handle);
-    } else if (simple_mode){
-        printf("test -m");
-        pcap_loop(handle, 0, packet_handler, (u_char *)&stats);
-
-
-    //-------- here stop -----//
-    // Calculate time elapsed
-    time_t currentTime;
-    time(&currentTime);
-    double timeElapsed = difftime(currentTime, start_time);
-
-    
-    double dataTransferRate = (double)stats.totalPayloadSize / timeElapsed;
-
-    
-    printf("Total Packets: %d\n", stats.totalPackets);
-    printf("Total Payload Size: %d bytes\n", stats.totalPayloadSize);
-    printf("Time Elapsed: %.2f seconds\n", timeElapsed);
-    printf("Data Transfer Rate: %.2f bytes/second\n", dataTransferRate);
-
     } else {
-        printf("Usage: %s -i -r -u -m\n", argv[0]);
+        printf("Usage: %s -i -r -u\n", argv[0]);
     }
 
     // Close the capture handle
@@ -138,21 +111,6 @@ int main(int argc, char *argv[]) {
 }
 
 
-void print_packet_type(int protocol) {
-    switch (protocol) {
-        case IPPROTO_ICMP:
-            printf("Packet Type: ICMP\n");
-            break;
-        case IPPROTO_TCP:
-            printf("Packet Type: TCP\n");
-            break;
-        case IPPROTO_UDP:
-            printf("Packet Type: UDP\n");
-            break;
-        default:
-            printf("Packet Type: Unknown (%d)\n", protocol);
-    }
-}
 
 
 
@@ -177,7 +135,7 @@ void icmp_packet_callback(pcap_t *handle) {
 }
 // -u
 void udp_packet_callback(pcap_t *handle) {
-     struct bpf_program fp;
+    struct bpf_program fp;
     char filter_exp[] = "udp";
     if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
@@ -193,23 +151,12 @@ void udp_packet_callback(pcap_t *handle) {
     pcap_loop(handle, 0, packet_callback, NULL);
 }
 
+//-r
+void run_mode_packet_callback(pcap_t *handle){
+    printf("Press 's' to stop sniffing ALL packets...\n");
+    pcap_loop(handle, 0, packet_callback, NULL);
+
+}
 
 
 // ______________________________
-
-// -m
-void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    struct PacketStats *stats = (struct PacketStats *)user_data;
-
-    // Increment total packet count
-    stats->totalPackets++;
-
-    // Calculate payload size
-    int payload_size = pkthdr->len - ETHERNET_HEADER_SIZE;
-    stats->totalPayloadSize += payload_size;
-
-    // Print payload information
-    if (payload_size > 0) {
-        printf("Packet Payload: %.*s\n", payload_size, packet + ETHERNET_HEADER_SIZE);
-    }
-}
