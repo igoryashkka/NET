@@ -17,29 +17,17 @@ struct PacketStats {
 };
 
 
-void icmp_packet_callback(pcap_t *handle);
-void udp_packet_callback(pcap_t *handle);
+void icmp_packet_callback(pcap_t *handle); // -i
+void udp_packet_callback(pcap_t *handle); // -u
 
-void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    struct PacketStats *stats = (struct PacketStats *)user_data;
 
-    // Increment total packet count
-    stats->totalPackets++;
+// -m
+void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
 
-    // Calculate payload size
-    int payload_size = pkthdr->len - ETHERNET_HEADER_SIZE;
-    stats->totalPayloadSize += payload_size;
 
-    // Print payload information
-    if (payload_size > 0) {
-        printf("Packet Payload: %.*s\n", payload_size, packet + ETHERNET_HEADER_SIZE);
-    }
+void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+    process_packet(packet);
 }
-
-
-
-void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
-
 
 
 void print_packet_type(int protocol);
@@ -54,9 +42,6 @@ void process_packet(const u_char *packet) {
     print_packet_type(ip_header->ip_p);
 }
 
-void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    process_packet(packet);
-}
 
 
 
@@ -123,8 +108,11 @@ int main(int argc, char *argv[]) {
     } else if (udp_mode){
         udp_packet_callback(handle);
     } else if (simple_mode){
+        printf("test -m");
         pcap_loop(handle, 0, packet_handler, (u_char *)&stats);
 
+
+    //-------- here stop -----//
     // Calculate time elapsed
     time_t currentTime;
     time(&currentTime);
@@ -140,7 +128,7 @@ int main(int argc, char *argv[]) {
     printf("Data Transfer Rate: %.2f bytes/second\n", dataTransferRate);
 
     } else {
-        printf("Usage: %s -i -r\n", argv[0]);
+        printf("Usage: %s -i -r -u -m\n", argv[0]);
     }
 
     // Close the capture handle
@@ -169,7 +157,7 @@ void print_packet_type(int protocol) {
 
 
 // ______________________________
-
+// -i 
 void icmp_packet_callback(pcap_t *handle) {
     // Set ICMP capture filter
     struct bpf_program fp;
@@ -187,7 +175,7 @@ void icmp_packet_callback(pcap_t *handle) {
     printf("Press 's' to stop sniffing ICMP packets...\n");
     pcap_loop(handle, 0, packet_callback, NULL);
 }
-
+// -u
 void udp_packet_callback(pcap_t *handle) {
      struct bpf_program fp;
     char filter_exp[] = "udp";
@@ -208,3 +196,20 @@ void udp_packet_callback(pcap_t *handle) {
 
 
 // ______________________________
+
+// -m
+void packet_handler(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
+    struct PacketStats *stats = (struct PacketStats *)user_data;
+
+    // Increment total packet count
+    stats->totalPackets++;
+
+    // Calculate payload size
+    int payload_size = pkthdr->len - ETHERNET_HEADER_SIZE;
+    stats->totalPayloadSize += payload_size;
+
+    // Print payload information
+    if (payload_size > 0) {
+        printf("Packet Payload: %.*s\n", payload_size, packet + ETHERNET_HEADER_SIZE);
+    }
+}
