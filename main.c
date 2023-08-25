@@ -8,7 +8,13 @@
 #include <time.h>
 /// @brief 
 volatile sig_atomic_t stop = 0; // A flag to indicate if capturing should stop
-///
+
+//////
+/// Sniffing ip-packets , filtes : icmp , udp
+/// Add another way to represent data 
+/// Add more useful infrom in process_packet func
+/// Handle start|stop run and choose filter in run-time
+//////
 #define ETHERNET_HEADER_SIZE 14
 
 
@@ -30,7 +36,8 @@ void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const 
 }
 
 
-   
+
+   //
 
 void process_packet(const u_char *packet) {
     struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
