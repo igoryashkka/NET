@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -O1 -g
+CFLAGS = -Wall -Wextra -g         # Add -g for debug symbols
 LIBS = -lpcap
 
 all: run
@@ -13,6 +13,8 @@ main.o: main.c
 lib.o: lib.c
 	$(CC) $(CFLAGS) -c lib.c -o lib.o
 
-clean:
-	rm -f run *.o
+debug:                              # New target for building with debug symbols
+	$(CC) $(CFLAGS) -O0 -g main.c lib.c -o debug_run $(LIBS)
 
+clean:
+	rm -f run debug_run *.o
