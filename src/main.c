@@ -17,8 +17,10 @@ volatile sig_atomic_t stop = 0; // A flag to indicate if capturing should stop
 /// Add more useful infrom in process_packet func
 /// Handle start|stop run and choose filter in run-time
 //////
+///Need to add help note
+//////
 
-#define ETHERNET_HEADER_SIZE 14
+#define ETHERNET_HEADER_LENGTH 14
 
 struct Packet_stat {
     struct pcap_pkthdr *generic_packet_information;
@@ -29,16 +31,13 @@ struct Packet_stat {
 };
 
 
-\
+
 void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr,struct Packet_stat **packet_info);
 
 
 
 void print_packet_info(struct Packet_stat* packet_info);
-void icmp_packet_callback(pcap_t *handle); // -i
-void udp_packet_callback(pcap_t *handle); // -u
-void run_mode_packet_callback(pcap_t *handle);// -r 
-
+void capture_packets(pcap_t *handle, const char *filter_exp);
 
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     struct Packet_stat *packet_info;
@@ -65,7 +64,7 @@ void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struc
 
     *(*packet_info)->generic_packet_information = *pkthdr;
     memcpy((*packet_info)->eth_header, packet, sizeof(struct ethhdr));
-    memcpy((*packet_info)->ip_header, packet + ETHERNET_HEADER_SIZE, sizeof(struct ip));
+    memcpy((*packet_info)->ip_header, packet + ETHERNET_HEADER_LENGTH, sizeof(struct ip));
 
     //(*packet_info)->eth_header = (struct ethhdr *)packet;
     //(*packet_info)->ip_header = (struct ip *)(packet + ETH_BYTES);
@@ -76,6 +75,7 @@ void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struc
 void print_packet_info(struct Packet_stat* packet_info){
     static unsigned int index_packet = 0; 
     //Print generic info 
+    //here run-time error
     printf("[%d] TS:%ld ",index_packet, (*packet_info).generic_packet_information->ts.tv_sec);
     printf("len:%d \n",(*packet_info).generic_packet_information->len);
 
@@ -115,149 +115,90 @@ void print_packet_info(struct Packet_stat* packet_info){
 
 
 
-
 int main(int argc, char *argv[]) {
-
-//
-
-    
     char errbuf[PCAP_ERRBUF_SIZE];
-   
-    char *dev; // Network device
+    pcap_if_t *alldevs, *dev;
     pcap_t *handle;
-
-    
-
-
-/*
-    pcap_if_t **list_dev;
-    pcap_findalldevs(list_dev,errbuf_);
-
-
-    for (pcap_if_t* curr_dev = *list_dev; curr_dev->next != NULL; curr_dev = curr_dev->next)
-    {
-        printf("Device : %s\n",curr_dev->name);
-        printf("  Description : %s\n",curr_dev->description);
-    }
-
-
-
-    pcap_freealldevs(*list_dev);
-
-
-*/
-
-    time_t start_time;
-
-
-
-
-    // Record the start time
-    time(&start_time);
-
     int option;
     int icmp_mode = 0;
-    int run_mode = 0;
     int udp_mode = 0;
+    int run_mode = 0;
 
     // Parse command-line arguments
-    while ((option = getopt(argc, argv, "irum")) != -1) {
+    while ((option = getopt(argc, argv, "iur")) != -1) {
         switch (option) {
             case 'i':
                 icmp_mode = 1;
                 break;
+            case 'u':
+                udp_mode = 1;
+                break;
             case 'r':
                 run_mode = 1;
                 break;
-            case 'u' : 
-                udp_mode = 1;
-                break;
             default:
-                fprintf(stderr, "Usage: %s -i -r\n", argv[0]);
+                fprintf(stderr, "Usage: %s -i -u -r\n", argv[0]);
                 return 1;
         }
     }
 
- 
-    dev = pcap_lookupdev(errbuf);
-    if (dev == NULL) {
-        printf("Error finding default device: %s\n", errbuf);
+   
+    if (pcap_findalldevs(&alldevs, errbuf) == -1) {
+        printf("Error finding devices: %s\n", errbuf);
         return 1;
     }
 
-    // Open the capture handle
-    handle = pcap_open_live(dev, BUFSIZ, 1, 1000, errbuf);
+    
+    dev = alldevs;
+
+    
+    handle = pcap_open_live(dev->name, BUFSIZ, 1, 1000, errbuf);
     if (handle == NULL) {
-        printf("Could not open device %s: %s\n", dev, errbuf);
+        printf("Could not open device %s: %s\n", dev->name, errbuf);
+        pcap_freealldevs(alldevs);
         return 1;
     }
 
-     printf("Running custom code...\n");
-        run_mode_packet_callback(handle);
+    printf("Running custom code...\n");
 
-    // Determine which function to run based on arguments
     if (icmp_mode) {
-        icmp_packet_callback(handle);
+        capture_packets(handle, "icmp");
+    } else if (udp_mode) {
+        capture_packets(handle, "udp");
     } else if (run_mode) {
-       
-    } else if (udp_mode){
-        udp_packet_callback(handle);
+        capture_packets(handle, NULL); 
     } else {
-        printf("Usage: %s -i -r -u\n", argv[0]);
+        printf("Usage: %s -i -u -r\n", argv[0]);
     }
 
-    // Close the capture handle
-    pcap_close(handle);
 
+    pcap_close(handle);
+    pcap_freealldevs(alldevs);
     return 0;
 }
 
 
-
-
-
-// ______________________________
-// -i 
-void icmp_packet_callback(pcap_t *handle) {
-    // Set ICMP capture filter
+void capture_packets(pcap_t *handle, const char *filter_exp) {
     struct bpf_program fp;
-    char filter_exp[] = "icmp";
-    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+    
+    // Compile filter expression
+    if (filter_exp && pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
         return;
     }
-    if (pcap_setfilter(handle, &fp) == -1) {
+    
+    // Set compiled filter
+    if (filter_exp && pcap_setfilter(handle, &fp) == -1) {
         fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
         return;
     }
 
-    // Start capturing ICMP packets
-    printf("Press 's' to stop sniffing ICMP packets...\n");
-    pcap_loop(handle, 0, packet_callback, NULL);
-}
-// -u
-void udp_packet_callback(pcap_t *handle) {
-    struct bpf_program fp;
-    char filter_exp[] = "udp";
-    if (pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
-        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
-        return;
-    }
-    if (pcap_setfilter(handle, &fp) == -1) {
-        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
-        return;
-    }
+    
+    const char *capture_msg = filter_exp ? filter_exp : "ALL";
+    printf("Press 's' to stop sniffing %s packets...\n", capture_msg);
 
-    // Start capturing ICMP packets
-    printf("Press 's' to stop sniffing UDP packets...\n");
+    
     pcap_loop(handle, 0, packet_callback, NULL);
-}
-
-//-r
-void run_mode_packet_callback(pcap_t *handle){
-    printf("Press 's' to stop sniffing ALL packets...\n");
-    pcap_loop(handle, 0, packet_callback, NULL);
-
 }
 
 
