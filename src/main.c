@@ -7,9 +7,10 @@
 #include <string.h>
 #include <signal.h>
 #include <time.h>
+#include <stdlib.h>
 /// @brief 
 volatile sig_atomic_t stop = 0; // A flag to indicate if capturing should stop
-
+#define ETH_BYTES 14
 //////
 /// Sniffing ip-packets , filtes : icmp , udp
 /// Add another way to represent data 
@@ -19,66 +20,97 @@ volatile sig_atomic_t stop = 0; // A flag to indicate if capturing should stop
 
 #define ETHERNET_HEADER_SIZE 14
 
-
-void process_packet(const u_char *packet,u_char *user_data,const struct pcap_pkthdr *pkthdr);
-
-struct PacketStats {
+struct Packet_stat {
+    struct pcap_pkthdr *generic_packet_information;
+    struct ethhdr *eth_header;
+    struct ip *ip_header;
     int totalPackets;
     int totalPayloadSize;
 };
 
 
+\
+void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr,struct Packet_stat **packet_info);
+
+
+
+void print_packet_info(struct Packet_stat* packet_info);
 void icmp_packet_callback(pcap_t *handle); // -i
 void udp_packet_callback(pcap_t *handle); // -u
 void run_mode_packet_callback(pcap_t *handle);// -r 
 
 
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    process_packet(packet, user_data,pkthdr);
+    struct Packet_stat *packet_info;
+
+    process_packet(packet,pkthdr,&packet_info);
+    print_packet_info(packet_info);
+    free(packet_info->generic_packet_information);
+    free(packet_info->eth_header);
+    free(packet_info->ip_header);
+    free(packet_info);
 }
 
 
 
 
-void process_packet(const u_char *packet, u_char *user_data,const struct pcap_pkthdr *pkthdr) {
-    printf(" -----------------\n");
-    printf(" --- user data ---\n");
-    printf(" -----------------\n");
-
-    if(user_data!= NULL){
-        for(uint8_t byte = 0; byte <pkthdr->len; byte++){
-            printf("%hhu", user_data[byte]);
-        }
-    }
 
 
-    printf(" -----------------\n");
-    printf(" --- user data ---\n");
-    printf(" -----------------\n");
+void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struct Packet_stat **packet_info) {
 
+    *packet_info = malloc(sizeof(struct Packet_stat));
+    (*packet_info)->generic_packet_information = malloc(sizeof(struct pcap_pkthdr));
+    (*packet_info)->eth_header = malloc(sizeof(struct ethhdr));
+    (*packet_info)->ip_header = malloc(sizeof(struct ip));
 
-    printf("pkthdr:%d", pkthdr->len);
+    *(*packet_info)->generic_packet_information = *pkthdr;
+    memcpy((*packet_info)->eth_header, packet, sizeof(struct ethhdr));
+    memcpy((*packet_info)->ip_header, packet + ETHERNET_HEADER_SIZE, sizeof(struct ip));
 
-    struct ethhdr *eth_header = (struct ethhdr *)packet;
+    //(*packet_info)->eth_header = (struct ethhdr *)packet;
+    //(*packet_info)->ip_header = (struct ip *)(packet + ETH_BYTES);
+}
 
 
 
+void print_packet_info(struct Packet_stat* packet_info){
+    static unsigned int index_packet = 0; 
+    //Print generic info 
+    printf("[%d] TS:%ld ",index_packet, (*packet_info).generic_packet_information->ts.tv_sec);
+    printf("len:%d \n",(*packet_info).generic_packet_information->len);
 
+    
+    //Print MAC adresess 
     printf("Source MAC: %02X:%02X:%02X:%02X:%02X:%02X | Destination MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
-           eth_header->h_source[0], eth_header->h_source[1], eth_header->h_source[2],
-           eth_header->h_source[3], eth_header->h_source[4], eth_header->h_source[5],
-           eth_header->h_dest[0], eth_header->h_dest[1], eth_header->h_dest[2],
-           eth_header->h_dest[3], eth_header->h_dest[4], eth_header->h_dest[5]);
+           packet_info->eth_header->h_source[0], packet_info->eth_header->h_source[1], packet_info->eth_header->h_source[2],
+           packet_info->eth_header->h_source[3], packet_info->eth_header->h_source[4], packet_info->eth_header->h_source[5],
+           packet_info->eth_header->h_dest[0], packet_info->eth_header->h_dest[1], packet_info->eth_header->h_dest[2],
+           packet_info->eth_header->h_dest[3], packet_info->eth_header->h_dest[4], packet_info->eth_header->h_dest[5]);
     
 
+    // Copy the source and destination IP addresses
+    struct in_addr src_addr = packet_info->ip_header->ip_src;
+    struct in_addr dst_addr = packet_info->ip_header->ip_dst;
 
-    struct ip *ip_header = (struct ip *)(packet + 14); // Skip Ethernet header (14 bytes)
+    // Convert the copied addresses to strings
+    char src_ip_str[INET_ADDRSTRLEN];
+    char dst_ip_str[INET_ADDRSTRLEN];
 
-    printf("Source IP: %s | Destination IP: %s | Protocol: %d  \n",
-           inet_ntoa(ip_header->ip_src), inet_ntoa(ip_header->ip_dst), ip_header->ip_p);
+    inet_ntop(AF_INET, &src_addr, src_ip_str, INET_ADDRSTRLEN);
+    inet_ntop(AF_INET, &dst_addr, dst_ip_str, INET_ADDRSTRLEN);
 
 
+    printf("Source IP: %s | Destination IP: %s | Protocol: %d\n",
+           src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
+  
+   
+    printf("\n\n");
+    
+   index_packet++;
 }
+
+
+
 
 
 
@@ -90,14 +122,14 @@ int main(int argc, char *argv[]) {
 
     
     char errbuf[PCAP_ERRBUF_SIZE];
-    char errbuf_[PCAP_ERRBUF_SIZE];
+   
     char *dev; // Network device
     pcap_t *handle;
 
-    struct PacketStats stats = {0, 0};
+    
 
 
-
+/*
     pcap_if_t **list_dev;
     pcap_findalldevs(list_dev,errbuf_);
 
@@ -113,7 +145,7 @@ int main(int argc, char *argv[]) {
     pcap_freealldevs(*list_dev);
 
 
-
+*/
 
     time_t start_time;
 
