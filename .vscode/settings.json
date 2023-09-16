@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "if_ether.h": "c",
+        "ip.h": "c",
+        "gui.h": "c",
+        "err.h": "c"
+    }
+}

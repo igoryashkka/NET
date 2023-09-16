@@ -56,4 +56,40 @@
         printf("\n"); 
     } 
  
- */
+
+
+ /*
+    SSL_CTX *ssl_ctx;
+    SSL *ssl;
+
+SSL_library_init();
+ERR_load_crypto_strings();
+SSL_load_error_strings();
+
+
+ssl_ctx = SSL_CTX_new(SSLv23_client_method());
+ssl = SSL_new(ssl_ctx);
+
+// Set the session key for decryption
+SSL_set_session(ssl, session_key);
+
+// Initialize a buffer to hold the decrypted payload
+unsigned char decrypted_payload[1024]; // MAX_PAYLOAD_SIZE is the maximum expected payload size
+
+// Decrypt the payload
+int result = SSL_read(ssl, decrypted_payload, 1024);
+if (result > 0) {
+    printf("Decrypted Payload:\n");
+    fwrite(decrypted_payload, 1, result, stdout);
+} else {
+    printf("Decryption failed.\n");
+}
+
+SSL_free(ssl);
+SSL_CTX_free(ssl_ctx);
+ERR_free_strings();
+
+    */
+
+
+ 
