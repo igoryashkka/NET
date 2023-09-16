@@ -6,6 +6,23 @@
 static  *scrolled_window; // Declare scrolled_window as a global variable
 static  GtkWidget *textview;  // Declare textview as a global variable
 
+GtkApplication *app;
+
+void run_gui_gtk(){
+
+    app = gtk_application_new ("org.gtk.app", G_APPLICATION_FLAGS_NONE);
+    g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
+    g_application_run (G_APPLICATION (app), 0, 0);
+   
+
+    g_object_unref (app);
+}
+
+
+
+
+
+
 
 
 void open_file(GtkWidget *widget, gpointer data) {

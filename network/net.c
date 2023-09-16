@@ -136,3 +136,50 @@ void print_packet_info(struct Packet_stat* packet_info){
     
    index_packet++;
 }
+
+
+
+
+void *capture_packets_thread(void *arg) {
+    pcap_t *handle = (pcap_t *)arg;
+
+    // Your packet capture code here
+    pcap_loop(handle, 0, packet_callback, NULL);
+
+    return NULL;
+}
+
+
+void capture_packets(pcap_t *handle, const char *filter_exp) {
+    struct bpf_program fp;
+
+   
+   
+   
+    
+    // Compile filter expression
+    if (filter_exp && pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
+        fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return;
+    }
+    
+    // Set compiled filter
+    if (filter_exp && pcap_setfilter(handle, &fp) == -1) {
+        fprintf(stderr, "Couldn't install filter %s: %s\n", filter_exp, pcap_geterr(handle));
+        return;
+    }
+
+    
+    const char *capture_msg = filter_exp ? filter_exp : "ALL";
+    printf("Press 's' to stop sniffing %s packets...\n", capture_msg);
+
+    pthread_t capture_thread;
+    if (pthread_create(&capture_thread, NULL, capture_packets_thread, handle)) {
+        fprintf(stderr, "Error creating capture thread\n");
+        return;
+    }
+    
+    
+
+
+}

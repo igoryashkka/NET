@@ -4,9 +4,14 @@
 #include <gtk/gtk.h>
 
 
-extern GtkApplication *app;
+
+//GtkApplication *app;
+
 extern char text[200];
 
+
+
+void run_gui_gtk();
 
 GtkWidget* create_menu_bar();
 gboolean update_textview_periodically(gpointer data);
