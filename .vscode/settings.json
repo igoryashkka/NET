@@ -3,6 +3,12 @@
         "if_ether.h": "c",
         "ip.h": "c",
         "gui.h": "c",
-        "err.h": "c"
+        "err.h": "c",
+        "pthread.h": "c",
+        "signal.h": "c",
+        "ssl.h": "c",
+        "string.h": "c",
+        "ip_icmp.h": "c",
+        "net.h": "c"
     }
 }

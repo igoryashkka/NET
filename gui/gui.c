@@ -1,91 +1,154 @@
 #include "gui.h"
 
-static GtkWidget *text_view; // Make text_view global
+///
+// If I remove static will be error : [redefenition] , why???
+///
+static  *scrolled_window; // Declare scrolled_window as a global variable
+static  GtkWidget *textview;  // Declare textview as a global variable
 
-char text_[200];
-// Function to update the text in the GtkTextView
-static gboolean update_text_view(gpointer user_data) {
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-    if (buffer != NULL) {
-        gtk_text_buffer_set_text(buffer, text_, -1);
-    }
-    return G_SOURCE_CONTINUE; // Keep the timer running
+
+
+void open_file(GtkWidget *widget, gpointer data) {
+    // Add code to handle opening a file here
 }
 
-static void print_hello (GtkWidget *widget,gpointer data){
-  g_print ("Hello World\n");
+void quit_app(GtkWidget *widget, gpointer data) {
+    gtk_main_quit();
 }
-static void activate(GtkApplication *app, gpointer user_data) {
-    GtkWidget *window;
-    GtkWidget *grid;
-    GtkWidget *text_view;
 
-    /* Create a new window, and set its title */
-    window = gtk_application_window_new(app);
-    gtk_window_set_title(GTK_WINDOW(window), "Window");
-    gtk_container_set_border_width(GTK_CONTAINER(window), 20);
+void capture_action(){
+g_print("capture_action");
+}
+void filter1_action(){
+    g_print("filter1_action");
+}
 
-    /* Increase the initial window size */
+
+void filter2_action(){
+    g_print("filter2_action");
+}
+
+void stop_action() {
+    g_print("stop_action");
+}
+void start_action() {
+    g_print("start_action");
+}
+void resume_action() {
+    g_print("resume_action");
+}
+
+
+
+
+
+GtkWidget* create_menu_bar() {
+    GtkWidget *menubar = gtk_menu_bar_new();
+
+    // File menu
+    GtkWidget *file_menu = gtk_menu_new();
+    GtkWidget *file_item = gtk_menu_item_new_with_label("File");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(file_item), file_menu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), file_item);
+
+    // Add "Open" option to the File menu
+    GtkWidget *open_item = gtk_menu_item_new_with_label("Open");
+    gtk_menu_shell_append(GTK_MENU_SHELL(file_menu), open_item);
+    g_signal_connect(open_item, "activate", G_CALLBACK(open_file), NULL);
+
+    // Capture menu
+    GtkWidget *capture_menu = gtk_menu_new();
+    GtkWidget *capture_item = gtk_menu_item_new_with_label("Capture");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(capture_item), capture_menu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), capture_item);
+
+    // Add "Start" option to the Capture menu
+    GtkWidget *start_item = gtk_menu_item_new_with_label("Start");
+    gtk_menu_shell_append(GTK_MENU_SHELL(capture_menu), start_item);
+    g_signal_connect(start_item, "activate", G_CALLBACK(start_action), NULL);
+
+    // Add "Stop" option to the Capture menu
+    GtkWidget *stop_item = gtk_menu_item_new_with_label("Stop");
+    gtk_menu_shell_append(GTK_MENU_SHELL(capture_menu), stop_item);
+    g_signal_connect(stop_item, "activate", G_CALLBACK(stop_action), NULL);
+
+    // Settings menu
+    GtkWidget *settings_menu = gtk_menu_new();
+    GtkWidget *settings_item = gtk_menu_item_new_with_label("Settings");
+    gtk_menu_item_set_submenu(GTK_MENU_ITEM(settings_item), settings_menu);
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), settings_item);
+
+    // Add "Filter 1" option to the Settings menu
+    GtkWidget *filter1_item = gtk_menu_item_new_with_label("Filter 1");
+    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), filter1_item);
+    g_signal_connect(filter1_item, "activate", G_CALLBACK(filter1_action), NULL);
+
+    // Add "Filter 2" option to the Settings menu
+    GtkWidget *filter2_item = gtk_menu_item_new_with_label("Filter 2");
+    gtk_menu_shell_append(GTK_MENU_SHELL(settings_menu), filter2_item);
+    g_signal_connect(filter2_item, "activate", G_CALLBACK(filter2_action), NULL);
+
+    // Create a separate "Exit" item in the menubar
+    GtkWidget *exit_item = gtk_menu_item_new_with_label("Exit");
+    gtk_menu_shell_append(GTK_MENU_SHELL(menubar), exit_item);
+    g_signal_connect(exit_item, "activate", G_CALLBACK(quit_app), NULL);
+
+    return menubar;
+}
+
+
+
+
+gboolean update_textview_periodically(gpointer data) {
+    // Get the text buffer associated with the textview
+    GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview);
+
+    // Append the new text to the buffer
+    const char *new_text = "New text to append every second\n";
+    gtk_text_buffer_insert_at_cursor(buffer, text, -1);
+
+    // Ensure the new text is visible by scrolling to the end
+    GtkAdjustment *v_adjust = gtk_scrolled_window_get_vadjustment(scrolled_window);
+    gtk_adjustment_set_value(v_adjust, gtk_adjustment_get_upper(v_adjust) - gtk_adjustment_get_page_size(v_adjust));
+
+    // Return TRUE to keep the timeout running
+    return TRUE;
+}
+
+
+
+
+void activate(GtkApplication *app, gpointer user_data) {
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "NET App");
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
 
-    /* Create a grid to hold the widgets */
-    grid = gtk_grid_new();
-    gtk_container_add(GTK_CONTAINER(window), grid);
+    GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_container_add(GTK_CONTAINER(window), vbox);
 
-    /* Create labels for the column headers */
-    GtkWidget *label_id = gtk_label_new("ID");
-    GtkWidget *label_description = gtk_label_new("Description");
-    GtkWidget *label_number = gtk_label_new("Number");
+    GtkWidget *menubar = create_menu_bar(); // Create your menu bar here
+    gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 0);
 
-    /* Add the labels to the grid */
-    gtk_grid_attach(GTK_GRID(grid), label_id, 0, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), label_description, 1, 0, 1, 1);
-    gtk_grid_attach(GTK_GRID(grid), label_number, 2, 0, 1, 1);
+    // Create a label for the big title
+    GtkWidget *title_label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(title_label), "<span size='xx-large' weight='bold'>NET APP</span>");
+    gtk_box_pack_start(GTK_BOX(vbox), title_label, FALSE, FALSE, 0);
 
-    /* Create example data and populate the table-like layout */
-    int row = 1;
-    for (int i = 1; i <= 3; i++) {
-        char id_text[10];
-        snprintf(id_text, sizeof(id_text), "%d", i);
+    // Create a scrolled window to hold the textview
+    scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
+    gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
 
-        /* Create labels for ID and Number columns */
-        GtkWidget *label_id_value = gtk_label_new(id_text);
-        GtkWidget *label_number_value = gtk_label_new("42"); // Example integer value
+    // Create the textview
+    textview = gtk_text_view_new();
+    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
+    gtk_container_add(GTK_CONTAINER(scrolled_window), textview);
 
-        /* Create a button for the Description column */
-        GtkWidget *button_description = gtk_button_new_with_label("Button");
-       // g_signal_connect(button_description, "clicked", G_CALLBACK(print_hello), NULL);
-
-        /* Set the Description column to take up 80% of the available width */
-        gtk_widget_set_hexpand(button_description, TRUE);
-        gtk_grid_attach(GTK_GRID(grid), label_id_value, 0, row, 1, 1);
-        gtk_grid_attach(GTK_GRID(grid), button_description, 1, row, 1, 1);
-        gtk_grid_attach(GTK_GRID(grid), label_number_value, 2, row, 1, 1);
-
-        row++;
-    }
-
-    /* Create a centered text area (GtkTextView) and add it to the grid */
-    text_view = gtk_text_view_new();
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(GTK_TEXT_VIEW(text_view));
-    gtk_text_buffer_set_text(buffer, "Hello, GTK!\n", -1); // Set initial text
-
-    // Create marks and apply them to the text buffer
-    GtkTextIter start, end;
-    gtk_text_buffer_get_start_iter(buffer, &start);
-    gtk_text_buffer_get_end_iter(buffer, &end);
-    GtkTextMark *mark1 = gtk_text_buffer_create_mark(buffer, "mark1", &start, FALSE);
-    GtkTextMark *mark2 = gtk_text_buffer_create_mark(buffer, "mark2", &end, TRUE);
-
-    gtk_grid_attach(GTK_GRID(grid), text_view, 0, row, 3, 1);
-
-    /* Show all widgets */
     gtk_widget_show_all(window);
 
-    // Add a timer to periodically update the text view
-    //g_timeout_add_seconds(1, update_text_view, NULL);
+    // Add a timeout to update the textview every second
+    g_timeout_add_seconds(1, update_textview_periodically, NULL);
 
-    /* Run the GTK main loop */
     gtk_main();
 }
-
