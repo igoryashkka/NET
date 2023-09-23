@@ -8,7 +8,7 @@
 //GtkApplication *app;
 
 extern char text[200];
-
+extern int X;
 
 
 void run_gui_gtk();

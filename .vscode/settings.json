@@ -9,6 +9,7 @@
         "ssl.h": "c",
         "string.h": "c",
         "ip_icmp.h": "c",
-        "net.h": "c"
+        "net.h": "c",
+        "stdlib.h": "c"
     }
 }

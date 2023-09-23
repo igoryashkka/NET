@@ -3,21 +3,21 @@
 ///
 // If I remove static will be error : [redefenition] , why???
 ///
-static  *scrolled_window; // Declare scrolled_window as a global variable
+static  GtkWidget 
+   *scrolled_window; // Declare scrolled_window as a global variable
 static  GtkWidget *textview;  // Declare textview as a global variable
 
 GtkApplication *app;
 
 void run_gui_gtk(){
 
-    app = gtk_application_new ("org.gtk.app", G_APPLICATION_FLAGS_NONE);
-    g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);
+    app = gtk_application_new ("org.gtk.app", G_APPLICATION_DEFAULT_FLAGS); //  just create instance of applaction - app  (like we can create multi windows app??)
+    g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);        //  Connects a #GCallback function to a signal for a particular object. The handler will be called synchronously,      
     g_application_run (G_APPLICATION (app), 0, 0);
    
 
     g_object_unref (app);
 }
-
 
 
 
@@ -135,12 +135,7 @@ gboolean update_textview_periodically(gpointer data) {
 
 
 
-void activate(GtkApplication *app, gpointer user_data) {
-    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
-    gtk_window_set_title(GTK_WINDOW(window), "NET App");
-    gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
-    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
-
+void start_capture(GtkWidget *window) {
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
     gtk_container_add(GTK_CONTAINER(window), vbox);
 
@@ -151,21 +146,47 @@ void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *title_label = gtk_label_new(NULL);
     gtk_label_set_markup(GTK_LABEL(title_label), "<span size='xx-large' weight='bold'>NET APP</span>");
     gtk_box_pack_start(GTK_BOX(vbox), title_label, FALSE, FALSE, 0);
+    // ----------------------------------------------------------------//
 
-    // Create a scrolled window to hold the textview
-    scrolled_window = gtk_scrolled_window_new(NULL, NULL);
+    // Create a scrolled window to hold the small containers
+    GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
     gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
 
-    // Create the textview
-    textview = gtk_text_view_new();
-    gtk_text_view_set_wrap_mode(GTK_TEXT_VIEW(textview), GTK_WRAP_WORD);
-    gtk_container_add(GTK_CONTAINER(scrolled_window), textview);
+    // Create a container to hold all the small_containers
+    GtkWidget *small_containers_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+
+    // Add your small_containers to the small_containers_box
+    for (int i = 0; i < 30; i++) {
+        GtkWidget *small_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+        gtk_container_set_border_width(GTK_CONTAINER(small_container), 5);
+
+        // Add a label or content to each small_container (customize this as needed)
+        char label_text[20];
+        snprintf(label_text, sizeof(label_text), "Container %d", i + 1);
+        GtkWidget *label = gtk_label_new(label_text);
+        gtk_container_add(GTK_CONTAINER(small_container), label);
+
+        // Add the small_container to the small_containers_box
+        gtk_container_add(GTK_CONTAINER(small_containers_box), small_container);
+    }
+
+    // Add the small_containers_box to the scrolled window
+    gtk_container_add(GTK_CONTAINER(scrolled_window), small_containers_box);
+}
+
+void activate(GtkApplication *app, gpointer user_data) {
+    GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
+    gtk_window_set_title(GTK_WINDOW(window), "NET App");
+    gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
+    g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+    start_capture(window);
+    
 
     gtk_widget_show_all(window);
 
     // Add a timeout to update the textview every second
-    g_timeout_add_seconds(1, update_textview_periodically, NULL);
+    //g_timeout_add_seconds(1, update_textview_periodically, NULL);
 
     gtk_main();
 }

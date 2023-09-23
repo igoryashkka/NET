@@ -1,16 +1,7 @@
 #include "main.h"
-
-
 // Global char array
 char text[200] = ""; // You can initialize it with your initial content
-
-
-
-
-
 /// @brief 
-
-
 //////
 /// Sniffing ip-packets , filtes : icmp , udp
 /// Add another way to represent data 
@@ -19,37 +10,21 @@ char text[200] = ""; // You can initialize it with your initial content
 //////
 ///Need to add help note
 //////
+void init_pcap(){
+    //paste here init code of pcap
+}
 
 
-
+ int X = 1000;
 
 int main(int argc, char *argv[]) {
     char errbuf[PCAP_ERRBUF_SIZE];
     pcap_if_t *alldevs, *dev;
     pcap_t *handle;
-    int option;
-    int icmp_mode = 0;
-    int udp_mode = 0;
-    int run_mode = 0;
+   
 
   
-    // Parse command-line arguments
-    while ((option = getopt(argc, argv, "iur")) != -1) {
-        switch (option) {
-            case 'i':
-                icmp_mode = 1;
-                break;
-            case 'u':
-                udp_mode = 1;
-                break;
-            case 'r':
-                run_mode = 1;
-                break;
-            default:
-                fprintf(stderr, "Usage: %s -i -u -r\n", argv[0]);
-                return 1;
-        }
-    }
+    printf("mode : %d",select_mode(argc,argv));
 
     
     if (pcap_findalldevs(&alldevs, errbuf) == -1) {
@@ -69,18 +44,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
 
-    printf("Running custom code...\n");
-
-    if (icmp_mode) {
-        capture_packets(handle, "icmp");
-    } else if (udp_mode) {
-        capture_packets(handle, "udp");
-    } else if (run_mode) {
-        capture_packets(handle, NULL); 
-    } else {
-        printf("Usage: %s -i -u -r\n", argv[0]);
-    }
-
+  
+    run_main_menu(handle,argv);
     run_gui_gtk();
 
     pcap_close(handle);

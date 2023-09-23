@@ -1,0 +1,18 @@
+# Ignore object files and executables
+*.o
+*.out
+
+# Ignore compiled C files
+*.exe
+
+
+# Ignore generated documentation
+doc/
+
+# Ignore build output directories
+bin/
+build/
+obj/  
+
+# Exclude gui/gui_test.c
+gui/gui_test.c

@@ -43,6 +43,10 @@ void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struc
     ip_header = packet + ETHERNET_HEADER_LENGTH; 
     ip_header_length = ((*ip_header) & 0x0F);
     ip_header_length = ip_header_length * 4; 
+
+
+
+    
     printf("IP header length (IHL) in bytes: %d\n", ip_header_length); 
     
     u_char protocol = *(ip_header + 9); 
@@ -75,7 +79,7 @@ void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struc
         } 
         printf("\n"); 
     } 
- 
+    
     
     *packet_info = malloc(sizeof(struct Packet_stat));
     (*packet_info)->generic_packet_information = malloc(sizeof(struct pcap_pkthdr));
@@ -97,18 +101,19 @@ void print_packet_info(struct Packet_stat* packet_info){
     //Print generic info 
     //here run-time error
     
-    printf("[%d] TS:%ld ",index_packet, (*packet_info).generic_packet_information->ts.tv_sec);
-    printf("len:%d \n",(*packet_info).generic_packet_information->len);
+    //printf("[%d] TS:%ld ",index_packet, (*packet_info).generic_packet_information->ts.tv_sec);
+    //printf("len:%d \n",(*packet_info).generic_packet_information->len);
 
     
     //Print MAC adresess 
+    /*
     printf("Source MAC: %02X:%02X:%02X:%02X:%02X:%02X | Destination MAC: %02X:%02X:%02X:%02X:%02X:%02X\n",
            packet_info->eth_header->h_source[0], packet_info->eth_header->h_source[1], packet_info->eth_header->h_source[2],
            packet_info->eth_header->h_source[3], packet_info->eth_header->h_source[4], packet_info->eth_header->h_source[5],
            packet_info->eth_header->h_dest[0], packet_info->eth_header->h_dest[1], packet_info->eth_header->h_dest[2],
            packet_info->eth_header->h_dest[3], packet_info->eth_header->h_dest[4], packet_info->eth_header->h_dest[5]);
     
-
+    */
     // Copy the source and destination IP addresses
     struct in_addr src_addr = packet_info->ip_header->ip_src;
     struct in_addr dst_addr = packet_info->ip_header->ip_dst;
@@ -123,6 +128,7 @@ void print_packet_info(struct Packet_stat* packet_info){
 
     printf("Source IP: %s | Destination IP: %s | Protocol: %d\n",
            src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
+           
     snprintf(text, sizeof(text), "[%d] TS:%ld len:%d\n"
                            "Source MAC: %02X:%02X:%02X:%02X:%02X:%02X | Destination MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
                            "Source IP: %s | Destination IP: %s | Protocol: %d\n\n",
@@ -133,6 +139,12 @@ void print_packet_info(struct Packet_stat* packet_info){
             packet_info->eth_header->h_dest[3], packet_info->eth_header->h_dest[4], packet_info->eth_header->h_dest[5],
             src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
     printf("\n\n");
+
+    X++;
+
+    printf("------------\n");
+    printf("text  "); printf("%s", text); printf(" ==== %d", X);
+    printf("------------\n");
     
    index_packet++;
 }
@@ -153,8 +165,13 @@ void *capture_packets_thread(void *arg) {
 void capture_packets(pcap_t *handle, const char *filter_exp) {
     struct bpf_program fp;
 
-   
-   
+    
+    printf("test --- \n");
+    //for (int i = 0; filter_exp[i] != '\0'; i++)
+    {
+      //  printf("%c",filter_exp[i]);
+    }
+    
    
     
     // Compile filter expression

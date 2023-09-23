@@ -1,5 +1,54 @@
 #include "lib.h"
 
+    int option;
+    int icmp_mode = 0;
+    int udp_mode = 0;
+    int run_mode = 0;
+    
+
+
+void run_main_menu(pcap_t *handle, char *argv[]){
+  printf("Running custom code...\n");
+
+    if (icmp_mode) {
+        capture_packets(handle, "icmp");
+    } else if (udp_mode) {
+        capture_packets(handle, "udp");
+    } else if (run_mode) {
+        capture_packets(handle, NULL); 
+    } else {
+        printf("Usage: %s -i -u -r\n", argv[0]);
+    }
+
+}
+
+
+
+int select_mode(int argc, char *argv[]){
+
+
+ // Parse command-line arguments
+    while ((option = getopt(argc, argv, "iur")) != -1) {
+        switch (option) {
+            case 'i':
+                icmp_mode = 1;
+                break;;
+            case 'u':
+                udp_mode = 1;
+                break;
+            case 'r':
+                run_mode = 1;
+                break;
+            default:
+                fprintf(stderr, "Usage: %s -i -u -r\n", argv[0]);
+                return 1;
+        }
+    }
+
+    return udp_mode;
+}
+
+
 
 ////
 //Extracting payload data in raw chars

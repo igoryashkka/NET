@@ -11,6 +11,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <pthread.h>
+#include "lib.h"
 #include "../gui/gui.h"
 #include "../network/net.h"
 

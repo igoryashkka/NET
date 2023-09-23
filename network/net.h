@@ -15,7 +15,7 @@
 #include <string.h>
 
 extern char text[200];
-
+extern int X;
 
 
 
