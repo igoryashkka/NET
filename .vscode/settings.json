@@ -10,6 +10,7 @@
         "string.h": "c",
         "ip_icmp.h": "c",
         "net.h": "c",
-        "stdlib.h": "c"
+        "stdlib.h": "c",
+        "time.h": "c"
     }
 }

@@ -7,9 +7,9 @@
 
 //GtkApplication *app;
 
-extern char text[200];
-extern int X;
 
+
+//int flag;
 
 void run_gui_gtk();
 

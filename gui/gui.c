@@ -3,11 +3,11 @@
 ///
 // If I remove static will be error : [redefenition] , why???
 ///
-static  GtkWidget 
-   *scrolled_window; // Declare scrolled_window as a global variable
-static  GtkWidget *textview;  // Declare textview as a global variable
 
 GtkApplication *app;
+extern char text[200];
+extern char packet_i[200];
+extern int flag;
 
 void run_gui_gtk(){
 
@@ -21,8 +21,9 @@ void run_gui_gtk(){
 
 
 
+int static counter = 0;
 
-
+int flag_start_capture = 0;
 
 
 void open_file(GtkWidget *widget, gpointer data) {
@@ -47,9 +48,12 @@ void filter2_action(){
 
 void stop_action() {
     g_print("stop_action");
+    flag_start_capture = 0;
 }
 void start_action() {
     g_print("start_action");
+    flag_start_capture = 1;
+
 }
 void resume_action() {
     g_print("resume_action");
@@ -115,25 +119,33 @@ GtkWidget* create_menu_bar() {
 
 
 
+// Global variables to hold references to the label and its container
 
-gboolean update_textview_periodically(gpointer data) {
-    // Get the text buffer associated with the textview
-    GtkTextBuffer *buffer = gtk_text_view_get_buffer(textview);
 
-    // Append the new text to the buffer
-    const char *new_text = "New text to append every second\n";
-    gtk_text_buffer_insert_at_cursor(buffer, text, -1);
+// Global variables to hold references to the label and the list box
+GtkWidget *label;
+GtkWidget *listbox;
 
-    // Ensure the new text is visible by scrolling to the end
-    GtkAdjustment *v_adjust = gtk_scrolled_window_get_vadjustment(scrolled_window);
-    gtk_adjustment_set_value(v_adjust, gtk_adjustment_get_upper(v_adjust) - gtk_adjustment_get_page_size(v_adjust));
+void add_new_box_to_list() {
+    // Create a new box with some text
+    if(flag_start_capture){
+    GtkWidget *box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 10);
+    counter++;
+    char _text[200];
+    snprintf(_text,200, "%s",packet_i);
+    //g_print(" ======= %s )))))))", packet_i);
 
-    // Return TRUE to keep the timeout running
-    return TRUE;
+
+    GtkWidget *label = gtk_label_new(_text);
+    gtk_box_pack_start(GTK_BOX(box), label, TRUE, TRUE, 0);
+
+    // Add the new box to the list box
+    gtk_list_box_insert(GTK_LIST_BOX(listbox), box, -1);
+    gtk_widget_show_all(box);
+    }
+    // Re-schedule adding a new box every 1 second
+    //g_timeout_add_seconds(1, add_new_box_to_list, NULL);
 }
-
-
-
 
 void start_capture(GtkWidget *window) {
     GtkWidget *vbox = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
@@ -143,50 +155,47 @@ void start_capture(GtkWidget *window) {
     gtk_box_pack_start(GTK_BOX(vbox), menubar, FALSE, FALSE, 0);
 
     // Create a label for the big title
-    GtkWidget *title_label = gtk_label_new(NULL);
-    gtk_label_set_markup(GTK_LABEL(title_label), "<span size='xx-large' weight='bold'>NET APP</span>");
-    gtk_box_pack_start(GTK_BOX(vbox), title_label, FALSE, FALSE, 0);
-    // ----------------------------------------------------------------//
+    label = gtk_label_new(NULL);
+    gtk_label_set_markup(GTK_LABEL(label), "<span size='xx-large' weight='bold'>NET APP</span>");
+    gtk_box_pack_start(GTK_BOX(vbox), label, FALSE, FALSE, 0);
 
-    // Create a scrolled window to hold the small containers
+    // Create a scrolled window to hold the list box
     GtkWidget *scrolled_window = gtk_scrolled_window_new(NULL, NULL);
-    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_ALWAYS);
+    gtk_scrolled_window_set_policy(GTK_SCROLLED_WINDOW(scrolled_window), GTK_POLICY_AUTOMATIC, GTK_POLICY_AUTOMATIC);
     gtk_box_pack_start(GTK_BOX(vbox), scrolled_window, TRUE, TRUE, 0);
 
-    // Create a container to hold all the small_containers
-    GtkWidget *small_containers_box = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    // Create a list box to hold the dynamic content
+    listbox = gtk_list_box_new();
+    gtk_container_add(GTK_CONTAINER(scrolled_window), listbox);
+    gtk_widget_show(listbox);
 
-    // Add your small_containers to the small_containers_box
-    for (int i = 0; i < 30; i++) {
-        GtkWidget *small_container = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-        gtk_container_set_border_width(GTK_CONTAINER(small_container), 5);
+    // Start adding a new box to the list every 1 second
 
-        // Add a label or content to each small_container (customize this as needed)
-        char label_text[20];
-        snprintf(label_text, sizeof(label_text), "Container %d", i + 1);
-        GtkWidget *label = gtk_label_new(label_text);
-        gtk_container_add(GTK_CONTAINER(small_container), label);
-
-        // Add the small_container to the small_containers_box
-        gtk_container_add(GTK_CONTAINER(small_containers_box), small_container);
-    }
-
-    // Add the small_containers_box to the scrolled window
-    gtk_container_add(GTK_CONTAINER(scrolled_window), small_containers_box);
+    g_timeout_add_seconds(1, (GSourceFunc)add_new_box_to_list, NULL);
+    
+       
+    
+   
 }
+
 
 void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "NET App");
     gtk_window_set_default_size(GTK_WINDOW(window), 800, 600);
     g_signal_connect(window, "destroy", G_CALLBACK(gtk_main_quit), NULL);
+
+    //g_timeout_add_seconds(1, (GSourceFunc)add_new_box_to_list, NULL);
+
     start_capture(window);
+    
+
     
 
     gtk_widget_show_all(window);
 
-    // Add a timeout to update the textview every second
-    //g_timeout_add_seconds(1, update_textview_periodically, NULL);
+    
+    
 
     gtk_main();
 }

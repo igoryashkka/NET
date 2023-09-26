@@ -3,6 +3,8 @@
 #include "net.h"
 
 
+char packet_i[200];
+extern int flag_start_capture; 
 
 void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr,struct Packet_stat **packet_info);
 
@@ -14,14 +16,17 @@ void capture_packets(pcap_t *handle, const char *filter_exp);
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     struct Packet_stat *packet_info;
 
-   
-
+    if(flag_start_capture) {
     process_packet(packet,pkthdr,&packet_info);
     print_packet_info(packet_info);
     free(packet_info->generic_packet_information);
     free(packet_info->eth_header);
     free(packet_info->ip_header);
     free(packet_info);
+    }
+   
+
+   
 }
 
 void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struct Packet_stat **packet_info) {
@@ -128,22 +133,17 @@ void print_packet_info(struct Packet_stat* packet_info){
 
     printf("Source IP: %s | Destination IP: %s | Protocol: %d\n",
            src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
-           
-    snprintf(text, sizeof(text), "[%d] TS:%ld len:%d\n"
-                           "Source MAC: %02X:%02X:%02X:%02X:%02X:%02X | Destination MAC: %02X:%02X:%02X:%02X:%02X:%02X\n"
+    
+ 
+    snprintf(packet_i, sizeof(packet_i), "[%d] TS:%ld len:%d\n"
                            "Source IP: %s | Destination IP: %s | Protocol: %d\n\n",
             index_packet, (*packet_info).generic_packet_information->ts.tv_sec, (*packet_info).generic_packet_information->len,
-            packet_info->eth_header->h_source[0], packet_info->eth_header->h_source[1], packet_info->eth_header->h_source[2],
-            packet_info->eth_header->h_source[3], packet_info->eth_header->h_source[4], packet_info->eth_header->h_source[5],
-            packet_info->eth_header->h_dest[0], packet_info->eth_header->h_dest[1], packet_info->eth_header->h_dest[2],
-            packet_info->eth_header->h_dest[3], packet_info->eth_header->h_dest[4], packet_info->eth_header->h_dest[5],
             src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
-    printf("\n\n");
+    
 
-    X++;
 
     printf("------------\n");
-    printf("text  "); printf("%s", text); printf(" ==== %d", X);
+    //printf("text  "); printf("%s", text); printf(" ==== %d", X);
     printf("------------\n");
     
    index_packet++;

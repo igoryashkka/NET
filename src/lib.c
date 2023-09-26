@@ -9,7 +9,7 @@
 
 void run_main_menu(pcap_t *handle, char *argv[]){
   printf("Running custom code...\n");
-
+   
     if (icmp_mode) {
         capture_packets(handle, "icmp");
     } else if (udp_mode) {
@@ -17,6 +17,7 @@ void run_main_menu(pcap_t *handle, char *argv[]){
     } else if (run_mode) {
         capture_packets(handle, NULL); 
     } else {
+        capture_packets(handle, NULL); 
         printf("Usage: %s -i -u -r\n", argv[0]);
     }
 

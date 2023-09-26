@@ -13,9 +13,7 @@
 #include <netinet/ip_icmp.h>
 #include <netinet/if_ether.h>
 #include <string.h>
-
-extern char text[200];
-extern int X;
+#include <pthread.h>
 
 
 
