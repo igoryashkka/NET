@@ -2,19 +2,12 @@
 #define MY_HEADER_H
 
 #include <gtk/gtk.h>
+#include "menu_bar.h"
 
 
-
-//GtkApplication *app;
-
-
-
-//int flag;
 
 void run_gui_gtk();
 
-GtkWidget* create_menu_bar();
-gboolean update_textview_periodically(gpointer data);
 void activate(GtkApplication *app, gpointer user_data);
 
 #endif // MY_HEADER_H

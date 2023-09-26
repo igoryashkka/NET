@@ -14,43 +14,27 @@ void print_packet_info(struct Packet_stat* packet_info);
 void capture_packets(pcap_t *handle, const char *filter_exp);
 
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
-    struct Packet_stat *packet_info;
-
+    struct Packet_stat *packet_info = NULL;
+    
     if(flag_start_capture) {
-    process_packet(packet,pkthdr,&packet_info);
+    process_packet(packet, pkthdr, &packet_info);
     print_packet_info(packet_info);
-    free(packet_info->generic_packet_information);
-    free(packet_info->eth_header);
-    free(packet_info->ip_header);
-    free(packet_info);
+        if(packet_info){
+            free(packet_info);
+        }
     }
-   
-
-   
 }
 
 void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struct Packet_stat **packet_info) {
 
-    struct ether_header *eth_header; 
-    eth_header = (struct ether_header *) packet; 
+    struct ether_header *eth_header = (struct ether_header *)packet;
     if (ntohs(eth_header->ether_type) != ETHERTYPE_IP) { 
         printf("Not an IP packet. Skipping...\n\n"); 
        // return; 
     } 
-    const u_char *ip_header; 
-    const u_char *tcp_header; 
-    const u_char *payload; 
-
-    int ip_header_length; 
-    int tcp_header_length; 
-    int payload_length; 
-
-    ip_header = packet + ETHERNET_HEADER_LENGTH; 
-    ip_header_length = ((*ip_header) & 0x0F);
-    ip_header_length = ip_header_length * 4; 
-
-
-
+    const u_char *ip_header = packet + ETHERNET_HEADER_LENGTH; 
+    
+    int ip_header_length = ((*ip_header) & 0x0F) * 4; 
     
     printf("IP header length (IHL) in bytes: %d\n", ip_header_length); 
     
@@ -60,43 +44,34 @@ void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struc
         //return; 
     } 
 
-    tcp_header = packet + ETHERNET_HEADER_LENGTH + ip_header_length; 
-    tcp_header_length = ((*(tcp_header + 12)) & 0xF0) >> 4; 
+    const u_char *tcp_header = packet + ETHERNET_HEADER_LENGTH + ip_header_length; 
+    int tcp_header_length = ((*(tcp_header + 12)) & 0xF0) >> 4; 
 
-    tcp_header_length = tcp_header_length * 4; 
+    tcp_header_length *= 4; 
     printf("TCP header length in bytes: %d\n", tcp_header_length); 
 
-     int total_headers_size = ETHERNET_HEADER_LENGTH+ip_header_length+tcp_header_length; 
+    int total_headers_size = ETHERNET_HEADER_LENGTH+ip_header_length+tcp_header_length; 
     printf("Size of all headers combined: %d bytes\n", total_headers_size); 
-    payload_length = pkthdr->caplen - 
-        (ETHERNET_HEADER_LENGTH + ip_header_length + tcp_header_length); 
+    int payload_length = pkthdr->caplen - total_headers_size; 
     printf("Payload size: %d bytes\n", payload_length); 
-    payload = packet + total_headers_size; 
+    const u_char *payload = packet + total_headers_size; 
     printf("Memory address where payload begins: %p\n\n", payload); 
 
 
-    if (payload_length > 0) { 
-        const u_char *temp_pointer = payload; 
-        int byte_count = 0; 
-        while (byte_count++ < payload_length) { 
-            printf("%c", *temp_pointer); 
-            temp_pointer++; 
-        } 
-        printf("\n"); 
-    } 
+    if (payload_length > 0) {
+        printf("%.*s\n", payload_length, payload);
+    }
+    
+
+    struct Packet_stat *packet_info_ptr = malloc(sizeof(struct Packet_stat));
+    if (packet_info_ptr) {
+        packet_info_ptr->generic_packet_information = *pkthdr;
+        memcpy(&packet_info_ptr->eth_header, eth_header, sizeof(struct ether_header));
+        memcpy(&packet_info_ptr->ip_header, ip_header, sizeof(struct ip));
+        *packet_info = packet_info_ptr;
+    }
     
     
-    *packet_info = malloc(sizeof(struct Packet_stat));
-    (*packet_info)->generic_packet_information = malloc(sizeof(struct pcap_pkthdr));
-    (*packet_info)->eth_header = malloc(sizeof(struct ethhdr));
-    (*packet_info)->ip_header = malloc(sizeof(struct ip));
-
-    *(*packet_info)->generic_packet_information = *pkthdr;
-    memcpy((*packet_info)->eth_header, packet, sizeof(struct ethhdr));
-    memcpy((*packet_info)->ip_header, packet + ETHERNET_HEADER_LENGTH, sizeof(struct ip));
-
-    //(*packet_info)->eth_header = (struct ethhdr *)packet;
-    //(*packet_info)->ip_header = (struct ip *)(packet + ETH_BYTES);
 }
 
 
@@ -120,8 +95,9 @@ void print_packet_info(struct Packet_stat* packet_info){
     
     */
     // Copy the source and destination IP addresses
-    struct in_addr src_addr = packet_info->ip_header->ip_src;
-    struct in_addr dst_addr = packet_info->ip_header->ip_dst;
+    //struct in_addr src_addr = packet_info->ip_header->ip_src;
+    struct in_addr src_addr  = packet_info->ip_header.ip_src;
+    struct in_addr dst_addr = packet_info->ip_header.ip_dst;
 
     // Convert the copied addresses to strings
     char src_ip_str[INET_ADDRSTRLEN];
@@ -132,19 +108,19 @@ void print_packet_info(struct Packet_stat* packet_info){
 
 
     printf("Source IP: %s | Destination IP: %s | Protocol: %d\n",
-           src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
+           src_ip_str, dst_ip_str, packet_info->ip_header.ip_p);
     
  
     snprintf(packet_i, sizeof(packet_i), "[%d] TS:%ld len:%d\n"
                            "Source IP: %s | Destination IP: %s | Protocol: %d\n\n",
-            index_packet, (*packet_info).generic_packet_information->ts.tv_sec, (*packet_info).generic_packet_information->len,
-            src_ip_str, dst_ip_str, packet_info->ip_header->ip_p);
+            index_packet, packet_info->generic_packet_information.ts.tv_sec, packet_info->generic_packet_information.len,
+            src_ip_str, dst_ip_str, packet_info->ip_header.ip_p);
     
 
 
-    printf("------------\n");
-    //printf("text  "); printf("%s", text); printf(" ==== %d", X);
-    printf("------------\n");
+    printf("------------\n----------------\n------------\n");
+    printf("text  "); printf("%s", packet_i); //printf(" ==== %d", X);
+    printf("------------\n----------------\n------------\n");
     
    index_packet++;
 }
@@ -165,15 +141,6 @@ void *capture_packets_thread(void *arg) {
 void capture_packets(pcap_t *handle, const char *filter_exp) {
     struct bpf_program fp;
 
-    
-    printf("test --- \n");
-    //for (int i = 0; filter_exp[i] != '\0'; i++)
-    {
-      //  printf("%c",filter_exp[i]);
-    }
-    
-   
-    
     // Compile filter expression
     if (filter_exp && pcap_compile(handle, &fp, filter_exp, 0, PCAP_NETMASK_UNKNOWN) == -1) {
         fprintf(stderr, "Couldn't parse filter %s: %s\n", filter_exp, pcap_geterr(handle));
@@ -200,3 +167,4 @@ void capture_packets(pcap_t *handle, const char *filter_exp) {
 
 
 }
+

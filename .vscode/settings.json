@@ -11,6 +11,7 @@
         "ip_icmp.h": "c",
         "net.h": "c",
         "stdlib.h": "c",
-        "time.h": "c"
+        "time.h": "c",
+        "menu_bar.h": "c"
     }
 }
