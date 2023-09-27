@@ -1,16 +1,26 @@
+///
+// -------------------- gui/gui.c -------------------------//
+///
+// Includes : 
 #include "gui.h"
-
-
+///
+//-------------------------------------------------------------//
+///
+// Global Variables
 GtkApplication *app;
 GtkWidget *label;
 GtkWidget *listbox;
 
-
 int flag_start_capture = 0;
 extern char packet_i[200];
-
-
-
+///
+//-------------------------------------------------------------//
+///
+// Internal Functions Defenitions
+///
+void add_new_box_to_list();
+void start_capture(GtkWidget *window);
+/// 
 void run_gui_gtk(){
     app = gtk_application_new ("org.gtk.app", G_APPLICATION_DEFAULT_FLAGS); //  just create instance of applaction - app  (like we can create multi windows app??)
     g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);        //  Connects a #GCallback function to a signal for a particular object. The handler will be called synchronously,      
@@ -76,8 +86,9 @@ void start_capture(GtkWidget *window) {
     
    
 }
-
-
+///
+//CallBacks : 
+///
 void activate(GtkApplication *app, gpointer user_data) {
     GtkWidget *window = gtk_window_new(GTK_WINDOW_TOPLEVEL);
     gtk_window_set_title(GTK_WINDOW(window), "NET App");

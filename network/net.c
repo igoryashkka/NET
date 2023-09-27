@@ -1,18 +1,26 @@
-
-
+///
+// -------------------- network/net.c -------------------------//
+///
+// Includes : 
 #include "net.h"
-
-
+///
+//-------------------------------------------------------------//
+///
+// Global Variables
 char packet_i[200];
 extern int flag_start_capture; 
-
-void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr,struct Packet_stat **packet_info);
-
-
-
+///
+//-------------------------------------------------------------//
+///
+// Internal Functions Defenitions
 void print_packet_info(struct Packet_stat* packet_info);
 void capture_packets(pcap_t *handle, const char *filter_exp);
+void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet);
+void process_packet(const u_char *packet,const struct pcap_pkthdr *pkthdr, struct Packet_stat **packet_info);
+///
+//---------------------------------------------------------//
 
+//
 void packet_callback(u_char *user_data, const struct pcap_pkthdr *pkthdr, const u_char *packet) {
     struct Packet_stat *packet_info = NULL;
     
@@ -131,7 +139,6 @@ void print_packet_info(struct Packet_stat* packet_info){
 void *capture_packets_thread(void *arg) {
     pcap_t *handle = (pcap_t *)arg;
 
-    // Your packet capture code here
     pcap_loop(handle, 0, packet_callback, NULL);
 
     return NULL;
