@@ -22,7 +22,7 @@ void add_new_box_to_list();
 void start_capture(GtkWidget *window);
 /// 
 void run_gui_gtk(){
-    app = gtk_application_new ("org.gtk.app", G_APPLICATION_DEFAULT_FLAGS); //  just create instance of applaction - app  (like we can create multi windows app??)
+    app = gtk_application_new ("org.gtk.app", 0); //  just create instance of applaction - app  (like we can create multi windows app??)
     g_signal_connect (app, "activate", G_CALLBACK (activate), NULL);        //  Connects a #GCallback function to a signal for a particular object. The handler will be called synchronously,      
     g_application_run (G_APPLICATION (app), 0, 0);
    
@@ -30,7 +30,10 @@ void run_gui_gtk(){
 }
 
 
-
+gboolean timer_callback(gpointer user_data){
+    add_new_box_to_list();
+    return G_SOURCE_CONTINUE;
+}
 
 
 void add_new_box_to_list() {
@@ -79,8 +82,8 @@ void start_capture(GtkWidget *window) {
     gtk_widget_show(listbox);
 
     // Start adding a new box to the list every 1 second
-
-    g_timeout_add_seconds(1, (GSourceFunc)add_new_box_to_list, NULL);
+    g_timeout_add(1000,timer_callback, NULL);
+    //g_timeout_add_seconds(1, (GSourceFunc)add_new_box_to_list, NULL);
     
        
     
